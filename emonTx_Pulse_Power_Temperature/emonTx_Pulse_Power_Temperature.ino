@@ -9,7 +9,6 @@ typedef struct { int pulse;} PayloadTX;
 PayloadTX emontx;                                                     // neat way of packaging data for RF comms
 
 const int PulsePin = 3;
-const int LEDpin = 9;
 boolean interrupt_received = false;
 
 void Pulse()
@@ -24,23 +23,22 @@ void setup()
     pinMode(PulsePin, INPUT);   
     digitalWrite(PulsePin, HIGH);   // and enable it's internal pull-up resistor
 
-    // Configure LED and flash
-    pinMode(LEDpin, OUTPUT);   
-    digitalWrite(LEDpin, HIGH); delay(500); digitalWrite(LEDpin, LOW); delay(500);
+    // Setup serial link
+    Serial.begin(57600);
+    Serial.println ("emonTX Pulse");
+    delay(10);
 
     // Initialize RF
     rf12_initialize(nodeID, freq, networkGroup);
     rf12_sleep(RF12_SLEEP);
 
-    // Setup serial link
-    Serial.begin(57600);
-    Serial.println ("emonTX Pulse");
-    delay(10); // without the delay, the message is lost when going to sleep
 }
 
 void loop() 
 {
-    static unsigned char count = 0;
+    static int count = 0;
+    static int wdt_int_count = 0;
+    boolean send_count = false;
 
     // Allow wake up pin to trigger interrupt on falling edge
     attachInterrupt(1, Pulse, FALLING);
@@ -52,7 +50,7 @@ void loop()
     // [...] Wait for pulse interrupt or end of watchdog time
     
     // Disable external pin interrupt on Pulse pin
-    detachInterrupt(0); 
+    detachInterrupt(1); 
     
     // If interrupt received, increment counter
     if (interrupt_received == true){
@@ -60,22 +58,25 @@ void loop()
       delay(10);
       if (digitalRead(3) == LOW){
         count++;
-        Serial.println (count);
-        delay(10);
       }
       interrupt_received = false;
+      send_count = true;
+    }
+    // otherwise, watchdog timer triggered
+    else {
+      wdt_int_count++;
+      if (wdt_int_count == 8) {
+        send_count = true;
+        wdt_int_count = 0;
+      }
     }
     
-    // Whether or not an interrupt was received, send count to emonBase
-    emontx.pulse = count;
-    send_rf_data();
-    // Blink once per count
-    for (int i=0;i<count;i++)
-    {
-      digitalWrite(LEDpin, HIGH); delay(100); digitalWrite(LEDpin, LOW); delay(100);     // flash LED
+    // If pulse received or 8 watchdog passed (8 x 8 s = 64 seconds), send count
+    if (send_count == true) {
+      emontx.pulse = count;
+      send_rf_data();
+      send_count = false;
     }
-    // Reset count
-    count = 0;
 }
 
 void send_rf_data()
