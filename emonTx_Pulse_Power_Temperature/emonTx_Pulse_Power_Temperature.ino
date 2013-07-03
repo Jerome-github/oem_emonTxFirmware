@@ -9,20 +9,27 @@ typedef struct { int pulse;} PayloadTX;
 PayloadTX emontx;                                                     // neat way of packaging data for RF comms
 
 const int PulsePin = 3;
+const int LEDpin = 9;
 boolean interrupt_received = false;
 
 void Pulse()
 {
     // Just a handler for the pin interrupt.
     interrupt_received = true;
+    digitalWrite(LEDpin, HIGH); delay(100); digitalWrite(LEDpin, LOW); delay(100);     // flash LED
 }
 
 void setup()
 {
     // Configure Pulse pin as input.
     pinMode(PulsePin, INPUT);   
-    digitalWrite(PulsePin, HIGH);   // and enable it's internal pull-up resistor
+    // and enable its internal pull-up resistor
+    digitalWrite(PulsePin, HIGH);
 
+    // Configure LED and flash
+    pinMode(LEDpin, OUTPUT);
+    digitalWrite(LEDpin, HIGH); delay(500); digitalWrite(LEDpin, LOW); delay(500);
+    
     // Setup serial link
     Serial.begin(57600);
     Serial.println ("emonTX Pulse");
@@ -54,28 +61,29 @@ void loop()
     
     // If interrupt received, increment counter
     if (interrupt_received == true){
+      interrupt_received = false;
       // Software debounce (10 ms)
       delay(10);
       if (digitalRead(3) == LOW){
         count++;
+        send_count = true;
+        wdt_int_count = 0;
       }
-      interrupt_received = false;
-      send_count = true;
     }
     // otherwise, watchdog timer triggered
     else {
       wdt_int_count++;
       if (wdt_int_count == 8) {
-        send_count = true;
         wdt_int_count = 0;
+        send_count = true;
       }
     }
     
     // If pulse received or 8 watchdog passed (8 x 8 s = 64 seconds), send count
     if (send_count == true) {
+      send_count = false;
       emontx.pulse = count;
       send_rf_data();
-      send_count = false;
     }
 }
 
