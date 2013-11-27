@@ -1,11 +1,26 @@
 #include "LowPower.h"
 #include <JeeLib.h>
 
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
 #define freq RF12_433MHZ                                                // Frequency of RF12B module can be RF12_433MHZ, RF12_868MHZ or RF12_915MHZ. You should use the one matching the module you have.433MHZ, RF12_868MHZ or RF12_915MHZ. You should use the one matching the module you have.
 const int nodeID = 12;                                                  // emonTx RFM12B node ID
 const int networkGroup = 210;                                           // emonTx RFM12B wireless network group - needs to be same as emonBase and emonGLCD needs to be same as emonBase and emonGLCD
 
-typedef struct { int pulse;} PayloadTX;
+#define ONE_WIRE_BUS 4                                                  // Data wire is plugged into port 2 on the Arduino
+OneWire oneWire(ONE_WIRE_BUS);                                          // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+DallasTemperature sensors(&oneWire);                                    // Pass our oneWire reference to Dallas Temperature.
+
+// By using direct addressing its possible to make sure that as you add temperature sensors
+// the temperature sensor to variable mapping will not change.
+// To find the addresses of your temperature sensors use the: **temperature_search sketch**
+DeviceAddress address_temp = { 0x28, 0x80, 0x1D, 0x4E, 0x04, 0x00, 0x00, 0x0F };
+
+typedef struct { 
+  int pulse;
+  int temp;
+} PayloadTX;
 PayloadTX emontx;                                                     // neat way of packaging data for RF comms
 
 const int PulsePin = 3;
@@ -34,6 +49,9 @@ void setup()
     Serial.begin(57600);
     Serial.println ("emonTX Pulse");
     delay(10);
+
+    // Setup temp sensor
+    sensors.begin();
 
     // Initialize RF
     rf12_initialize(nodeID, freq, networkGroup);
@@ -80,9 +98,14 @@ void loop()
     }
     
     // If pulse received or 8 watchdog passed (8 x 8 s = 64 seconds), send count
+    // and temperature
     if (send_count == true) {
       send_count = false;
       emontx.pulse = count;
+      
+      sensors.requestTemperatures();                                        // Send the command to get temperatures
+      emontx.temp = sensors.getTempC(address_temp) * 100;
+
       send_rf_data();
     }
 }
