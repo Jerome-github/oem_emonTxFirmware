@@ -4,6 +4,8 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
+#define RF12_DATA_RATE RF12_DATA_RATE_1
+
 #define freq RF12_433MHZ                                                // Frequency of RF12B module can be RF12_433MHZ, RF12_868MHZ or RF12_915MHZ. You should use the one matching the module you have.433MHZ, RF12_868MHZ or RF12_915MHZ. You should use the one matching the module you have.
 const int nodeID = 12;                                                  // emonTx RFM12B node ID
 const int networkGroup = 210;                                           // emonTx RFM12B wireless network group - needs to be same as emonBase and emonGLCD needs to be same as emonBase and emonGLCD
@@ -55,6 +57,7 @@ void setup()
 
     // Initialize RF
     rf12_initialize(nodeID, freq, networkGroup);
+    rf12_control(RF12_DATA_RATE);
     rf12_sleep(RF12_SLEEP);
 
 }
