@@ -46,11 +46,13 @@
 -------------------------------------------------------------------------------------------------------------
 */
 
+#define DEBUGGING                                                       // enable this line to include debugging print statements
+
 #define RF_freq RF12_433MHZ                                             // Frequency of RF12B module can be RF12_433MHZ, RF12_868MHZ or RF12_915MHZ. You should use the one matching the module you have.
 const int nodeID = 10;                                                  // emonTx RFM12B node ID
 const int networkGroup = 210;                                           // emonTx RFM12B wireless network group - needs to be same as emonBase and emonGLCD
 
-const int UNO = 1;                                                      // Set to 0 if you're not using the UNO bootloader (i.e using Duemilanove) - All Atmega's shipped from OpenEnergyMonitor come with Arduino Uno bootloader
+#define USE_UNO_BOOTLOADER                                              // Disable (comment) if you're not using the UNO bootloader (i.e using Duemilanove) - All Atmega's shipped from OpenEnergyMonitor come with Arduino Uno bootloader
 #include <avr/wdt.h>                                                    // the UNO bootloader 
 
 #define RF69_COMPAT 0                                                   // set to 1 to use RFM69CW 
@@ -78,12 +80,16 @@ void setup()
   rf12_initialize(nodeID, RF_freq, networkGroup);                       // initialize RF
   rf12_sleep(RF12_SLEEP);
 
+#ifdef DEBUGGING
   pinMode(LEDpin, OUTPUT);                                              // Setup indicator LED
   digitalWrite(LEDpin, HIGH);
+#endif
   
   attachInterrupt(1, onPulse, FALLING);                                 // kWh interrupt attached to IRQ 1 = pin3 - hardwired to emonTx pulse jackplug. For connections see: http://openenergymonitor.org/emon/node/208
   
-  if (UNO) wdt_enable(WDTO_8S);  
+#ifdef USE_UNO_BOOTLOADER
+  wdt_enable(WDTO_8S);
+#endif
 }
 
 void loop() 
@@ -91,12 +97,14 @@ void loop()
   emontx.pulse = pulseCount; pulseCount=0; 
   send_rf_data();  // *SEND RF DATA* - see emontx_lib
 
+#ifdef DEBUGGING
   Serial.print(emontx.power);
   Serial.print("W ");
   Serial.println(emontx.pulse);
+  digitalWrite(LEDpin, HIGH); delay(2); digitalWrite(LEDpin, LOW);      // flash LED
+#endif
 
   emontx_sleep(10);                                                     // sleep or delay in seconds - see emontx_lib
-  digitalWrite(LEDpin, HIGH); delay(2); digitalWrite(LEDpin, LOW);      // flash LED
 }
 
 
