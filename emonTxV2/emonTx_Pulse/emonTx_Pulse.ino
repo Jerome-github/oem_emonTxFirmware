@@ -65,7 +65,7 @@ PayloadTX emontx;                                                       // neat 
 const int LEDpin = 9;  
 
 // Pulse counting settings 
-long pulseCount = 0;                                                    // Number of pulses, used to measure energy.
+unsigned long pulseCount = 0;                                                // Number of pulses, used to measure energy.
 unsigned long pulseTime,lastTime;                                       // Used to measure power.
 double power = 0;                                                       // power
 int ppwh = 1;                                                           // 1000 pulses/kwh = 1 pulse per wh - Number of pulses per wh - found or set on the meter.
@@ -96,7 +96,6 @@ void loop()
 { 
   emontx.power = power;
   emontx.pulse = pulseCount;
-  pulseCount=0;
   send_rf_data();  // *SEND RF DATA* - see emontx_lib
 
 #ifdef DEBUGGING
