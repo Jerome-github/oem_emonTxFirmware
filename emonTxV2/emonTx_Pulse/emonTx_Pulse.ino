@@ -67,7 +67,7 @@ const int LEDpin = 9;
 // Pulse counting settings 
 long pulseCount = 0;                                                    // Number of pulses, used to measure energy.
 unsigned long pulseTime,lastTime;                                       // Used to measure power.
-double power, elapsedWh;                                                // power and energy
+double power = 0;                                                       // power
 int ppwh = 1;                                                           // 1000 pulses/kwh = 1 pulse per wh - Number of pulses per wh - found or set on the meter.
 
 
@@ -94,7 +94,9 @@ void setup()
 
 void loop() 
 { 
-  emontx.pulse = pulseCount; pulseCount=0; 
+  emontx.power = power;
+  emontx.pulse = pulseCount;
+  pulseCount=0;
   send_rf_data();  // *SEND RF DATA* - see emontx_lib
 
 #ifdef DEBUGGING
@@ -114,6 +116,6 @@ void onPulse()
   lastTime = pulseTime;                                                 // used to measure time between pulses.
   pulseTime = micros();
   pulseCount++;                                                         // pulseCounter               
-  emontx.power = int((3600000000.0 / (pulseTime - lastTime))/ppwh);     // Calculate power
+  power = int((3600000000.0 / (pulseTime - lastTime))/ppwh);            // Calculate power
 }
 
