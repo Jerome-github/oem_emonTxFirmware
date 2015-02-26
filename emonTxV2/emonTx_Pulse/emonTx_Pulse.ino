@@ -62,6 +62,7 @@ ISR(WDT_vect) { Sleepy::watchdogEvent(); }
 typedef struct { int power, pulse;} PayloadTX;
 PayloadTX emontx;                                                       // neat way of packaging data for RF comms
 
+const int pulsePin = 3;                                                 // Sensor triggers pulses on IRQ 1 = pin 3
 const int LEDpin = 9;
 const int debouncing_time = 10;                                         // Set interrupt debouncing time to 10 ms
 
@@ -86,6 +87,12 @@ void setup()
   pinMode(LEDpin, OUTPUT);                                              // Setup indicator LED
   digitalWrite(LEDpin, LOW);
 #endif
+  
+  // Setup pulsePin as input
+  pinMode(pulsePin, INPUT);
+  // Enable internal pull-up resistor if sensor between GND and output (Sleeve-Ring).
+  // Comment the line if between Vcc and output (Tip-Ring).
+  digitalWrite(pulsePin, HIGH);
   
   attachInterrupt(1, onPulse, FALLING);                                 // kWh interrupt attached to IRQ 1 = pin3 - hardwired to emonTx pulse jackplug. For connections see: http://openenergymonitor.org/emon/node/208
   
