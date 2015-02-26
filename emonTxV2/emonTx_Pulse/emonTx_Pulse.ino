@@ -62,11 +62,13 @@ ISR(WDT_vect) { Sleepy::watchdogEvent(); }
 typedef struct { int power, pulse;} PayloadTX;
 PayloadTX emontx;                                                       // neat way of packaging data for RF comms
 
-const int LEDpin = 9;  
+const int LEDpin = 9;
+const int debouncing_time = 10;                                         // Set interrupt debouncing time to 10 ms
 
 // Pulse counting settings 
-unsigned long pulseCount = 0;                                                // Number of pulses, used to measure energy.
+unsigned long pulseCount = 0;                                           // Number of pulses, used to measure energy.
 unsigned long pulseTime,lastTime;                                       // Used to measure power.
+unsigned long newPulse, lastPulse;                                      // Used to debounce interrupt
 double power = 0;                                                       // power
 int ppwh = 1;                                                           // 1000 pulses/kwh = 1 pulse per wh - Number of pulses per wh - found or set on the meter.
 
@@ -112,9 +114,13 @@ void loop()
 // The interrupt routine - runs each time a falling edge of a pulse is detected
 void onPulse()                  
 {
-  lastTime = pulseTime;                                                 // used to measure time between pulses.
-  pulseTime = micros();
-  pulseCount++;                                                         // pulseCounter               
-  power = int((3600000000.0 / (pulseTime - lastTime))/ppwh);            // Calculate power
+  newPulse = micros();
+  if(newPulse - lastPulse >= debouncing_time * 1000) {
+    lastPulse = newPulse;                                                 
+    lastTime = pulseTime;                                                 // used to measure time between pulses.
+    pulseTime = newPulse;
+    pulseCount++;                                                         // pulseCounter               
+    power = int((3600000000.0 / (pulseTime - lastTime))/ppwh);            // Calculate power
+  }
 }
 
