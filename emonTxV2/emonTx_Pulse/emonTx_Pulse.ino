@@ -84,7 +84,7 @@ void setup()
 
 #ifdef DEBUGGING
   pinMode(LEDpin, OUTPUT);                                              // Setup indicator LED
-  digitalWrite(LEDpin, HIGH);
+  digitalWrite(LEDpin, LOW);
 #endif
   
   attachInterrupt(1, onPulse, FALLING);                                 // kWh interrupt attached to IRQ 1 = pin3 - hardwired to emonTx pulse jackplug. For connections see: http://openenergymonitor.org/emon/node/208
