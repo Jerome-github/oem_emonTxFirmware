@@ -121,6 +121,10 @@ void onPulse()
     pulseTime = newPulse;
     pulseCount++;                                                         // pulseCounter               
     power = int((3600000000.0 / (pulseTime - lastTime))/ppwh);            // Calculate power
+#ifdef DEBUGGING
+    digitalWrite(LEDpin, HIGH); delay(10);                               // flash LED 
+    digitalWrite(LEDpin, LOW); delay(10);     
+#endif
   }
 }
 
